@@ -1,0 +1,1 @@
+*/5 * * * *	root iw dev wlan1 scan | grep SSID > /dev/null > 2>&1
