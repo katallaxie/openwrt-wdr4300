@@ -1,7 +1,9 @@
 Openwrt TP-Link WDR4300 Configuration
 =====================================
 
-* Openwrt: Attitude Adjustment 12.09.1
+* Openwrt: Barrier Breaker 14.07
 * Packages: tba
 
 This is my Openwrt configuration. It is in particular tuned for a Unitymedia Internet Access with DS-Lite.
+
+You should login to your CISCO Modem at 192.168.0.1 (admin:atlanta) and disable all firewalls.
