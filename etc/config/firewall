@@ -1,141 +1,227 @@
-
 config defaults
-	option syn_flood '1'
-	option input 'ACCEPT'
-	option output 'ACCEPT'
-	option forward 'REJECT'
-	option disable_ipv6 '1'
+	option syn_flood	1
+	option input		ACCEPT
+	option output		ACCEPT
+	option forward		REJECT
+# Uncomment this line to disable ipv6 rules
+	option disable_ipv6	1
 
 config zone
-	option name 'lan'
-	option input 'ACCEPT'
-	option output 'ACCEPT'
-	option forward 'REJECT'
-	option network 'lan voip'
+	option name		lan
+	list   network		'lan'
+#	list   network		'lan6'
+	option input		ACCEPT
+	option output		ACCEPT
+	option forward		ACCEPT
 
 config zone
-	option name 'wan'
-	option network 'wan'
-	option input 'REJECT'
-	option output 'ACCEPT'
-	option forward 'REJECT'
-	option masq '1'
-	option mtu_fix '1'
+	option name		wan
+	list   network		'wan'
+#	list   network		'wan6'
+	option input		REJECT
+	option output		ACCEPT
+	option forward		REJECT
+	option masq		1
+	option mtu_fix		1
+
+config zone
+	option name		voip
+	option network		voip
+	option input		accept
+	option output		accept
+	option forward		reject
+
+config zone
+        option name             vpn
+        option input            ACCEPT
+        option output           ACCEPT
+        option forward          REJECT
+        option masq             1
+        list network            'vpn'
 
 config forwarding
-	option src 'lan'
-	option dest 'wan'
+        option src              vpn
+        option dest             lan
+
+config forwarding
+        option dest             vpn
+        option src              lan
+
+config forwarding
+	option src		lan
+	option dest		wan
+
+# We need to accept udp packets on port 68,
+# see https://dev.openwrt.org/ticket/4108
+config rule
+	option name		Allow-DHCP-Renew
+	option src		wan
+	option proto		udp
+	option dest_port	68
+	option target		ACCEPT
+	option family		ipv4
+
+config redirect
+	option name		'Asterisk'
+	option src		voip
+	option proto		udp
+	option src_dport	5060
+	option src_dip		'!10.0.83.1'
+	option dest_port	5060
+	option dest_ip		10.0.83.1			
+
+config include                                                                                                                                             
+        option family		ipv4
+	option path /etc/firewall.sip
+
+config rule                                          
+        option name 'Dont rack NETBIOS Service'     
+        option src 'lan'                             
+        option src_port '137-139'                    
+        option dest 'lan'                            
+        option target 'NOTRACK'                      
+                                                     
+config rule                                          
+        option name 'Dont track NETBIOS Service'    
+        option src 'lan'                             
+        option dest 'lan'                        
+        option dest_port '137-139'                   
+        option target 'NOTRACK'                      
+                                                 
+config rule                                      
+        option name 'Dont track Windows Filesharing'
+        option src 'lan'                             
+        option src_port '445'              
+        option dest 'lan'                            
+        option target 'NOTRACK'                      
+                                                 
+config rule                                     
+        option name 'Dont track Windows Filesharing'
+        option src 'lan'                             
+        option dest 'lan'                   
+        option dest_port '445'                       
+        option target 'NOTRACK'                  
+                                                     
+config rule                                      
+        option name 'Dont track AFP Filesharing'    
+        option src 'lan'                             
+        option dest 'lan'                          
+        option dest_port '548'                       
+        option target 'NOTRACK'
+
+# Hardened Security
 
 config rule
-	option name 'Allow-DHCP-Renew'
-	option src 'wan'
-	option proto 'udp'
-	option dest_port '68'
-	option target 'ACCEPT'
-	option family 'ipv4'
+        option name             Drop-Ping
+        option src              wan
+        option proto            icmp
+        option icmp_type        echo-request
+        option family           ipv4
+        option target           DROP
 
 config rule
-	option name 'Allow-Ping'
-	option src 'wan'
-	option proto 'icmp'
-	option icmp_type 'echo-request'
-	option family 'ipv4'
-	option target 'ACCEPT'
-	option enabled '0'
+	option name		Drop-SSH
+	option src		wan
+	option proto		tcp
+	option family		ipv4
+	option dest_port	22
+	option target		DROP
 
 config rule
-	option name 'Allow-DHCPv6'
-	option src 'wan'
-	option proto 'udp'
-	option src_ip 'fe80::/10'
-	option src_port '547'
-	option dest_ip 'fe80::/10'
-	option dest_port '546'
-	option family 'ipv6'
-	option target 'ACCEPT'
+	option name		Drop-HTTP
+	option src		wan
+	option proto		tcp
+	option family		ipv4
+	option dest_port	80
+	option target		DROP
 
 config rule
-	option name 'Allow-ICMPv6-Input'
-	option src 'wan'
-	option proto 'icmp'
-	list icmp_type 'echo-request'
-	list icmp_type 'echo-reply'
-	list icmp_type 'destination-unreachable'
-	list icmp_type 'packet-too-big'
-	list icmp_type 'time-exceeded'
-	list icmp_type 'bad-header'
-	list icmp_type 'unknown-header-type'
-	list icmp_type 'router-solicitation'
-	list icmp_type 'neighbour-solicitation'
-	list icmp_type 'router-advertisement'
-	list icmp_type 'neighbour-advertisement'
-	option limit '1000/sec'
-	option family 'ipv6'
-	option target 'ACCEPT'
+	option name		Drop-HTTPS
+	option src		wan
+	option proto		tcp
+	option family		ipv4
+	option dest_port	443
+	option target		DROP 	
 
-config rule
-	option name 'Allow-ICMPv6-Forward'
-	option src 'wan'
-	option dest '*'
-	option proto 'icmp'
-	list icmp_type 'echo-request'
-	list icmp_type 'echo-reply'
-	list icmp_type 'destination-unreachable'
-	list icmp_type 'packet-too-big'
-	list icmp_type 'time-exceeded'
-	list icmp_type 'bad-header'
-	list icmp_type 'unknown-header-type'
-	option limit '1000/sec'
-	option family 'ipv6'
-	option target 'ACCEPT'
-
+# include a file with users custom iptables rules
 config include
-	option path '/etc/firewall.user'
+	option path /etc/firewall.user
 
-config zone
-	option name 'hotspot'
-	option network 'hotspot'
-	option input 'ACCEPT'
-	option output 'ACCEPT'
-	option forward 'REJECT'
+# IPv6 Unitymedia - Proxy NDP
+config include
+	option path /etc/firewall.ipv6
 
-config forwarding
-	option src 'hotspot'
-	option dest 'wan'
-	option mtu_fix '1'
+### EXAMPLE CONFIG SECTIONS
+# do not allow a specific ip to access wan
+#config rule
+#	option src		lan
+#	option src_ip	192.168.45.2
+#	option dest		wan
+#	option proto	tcp
+#	option target	REJECT
 
-config rule
-	option _name 'Dont rack NETBIOS Service'
-	option src 'lan'
-	option src_port '137-139'
-	option dest 'lan'
-	option target 'NOTRACK'
+# block a specific mac on wan
+#config rule
+#	option dest		wan
+#	option src_mac	00:11:22:33:44:66
+#	option target	REJECT
 
-config rule
-	option _name 'Dont track NETBIOS Service'
-	option src 'lan'
-	option dest 'lan'
-	option dest_port '137-139'
-	option target 'NOTRACK'
+# block incoming ICMP traffic on a zone
+#config rule
+#	option src		lan
+#	option proto	ICMP
+#	option target	DROP
 
-config rule
-	option _name 'Dont track Windows Filesharing'
-	option src 'lan'
-	option src_port '445'
-	option dest 'lan'
-	option target 'NOTRACK'
+# port redirect port coming in on wan to lan
+#config redirect
+#	option src			wan
+#	option src_dport	80
+#	option dest			lan
+#	option dest_ip		192.168.16.235
+#	option dest_port	80
+#	option proto		tcp
 
-config rule
-	option _name 'Dont track Windows Filesharing'
-	option src 'lan'
-	option dest 'lan'
-	option dest_port '445'
-	option target 'NOTRACK'
+# port redirect of remapped ssh port (22001) on wan
+#config redirect
+#	option src		wan
+#	option src_dport	22001
+#	option dest		lan
+#	option dest_port	22
+#	option proto		tcp
 
-config rule
-	option _name 'Dont track AFP Filesharing'
-	option src 'lan'
-	option dest 'lan'
-	option dest_port '548'
-	option target 'NOTRACK'
+# allow IPsec/ESP and ISAKMP passthrough
+#config rule
+#	option src		wan
+#	option dest		lan
+#	option protocol		esp
+#	option target		ACCEPT
 
+#config rule
+#	option src		wan
+#	option dest		lan
+#	option src_port		500
+#	option dest_port	500
+#	option proto		udp
+#	option target		ACCEPT
+
+### FULL CONFIG SECTIONS
+#config rule
+#	option src		lan
+#	option src_ip	192.168.45.2
+#	option src_mac	00:11:22:33:44:55
+#	option src_port	80
+#	option dest		wan
+#	option dest_ip	194.25.2.129
+#	option dest_port	120
+#	option proto	tcp
+#	option target	REJECT
+
+#config redirect
+#	option src		lan
+#	option src_ip	192.168.45.2
+#	option src_mac	00:11:22:33:44:55
+#	option src_port		1024
+#	option src_dport	80
+#	option dest_ip	194.25.2.129
+#	option dest_port	120
+#	option proto	tcp

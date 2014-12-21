@@ -1,0 +1,6 @@
+check process asterisk with pidfile /tmp/run/asterisk/asterisk.pid
+	group asterisk
+	start program = "/etc/init.d/asterisk start"
+	stop program = "/etc/init.d/asterisk stop"
+	if failed port 5060 type udp then restart 
+	if 5 restarts within 5 cycles then timeout

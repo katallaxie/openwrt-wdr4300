@@ -1,0 +1,6 @@
+#!/bin/sh
+
+[ "$ACTION" = ifup ] || exit 0
+
+ebtables -t broute -A BROUTING -i eth0.2 -p ! ipv6 -j DROP
+brctl addif br-lan eth0.2
